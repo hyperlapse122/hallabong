@@ -9,4 +9,8 @@ edition = "2018"
 [dependencies]
 tokio = { version = "1.11.0", features = ["macros", "rt-multi-thread"] }
 serenity = { default-features = false, features = ["client", "standard_framework", "voice", "gateway", "model", "rustls_backend", "cache"], version = "0.10.9" }
-songbird = { version = "0.2.0", features = ["serenity-rustls"] }
+songbird = { version = "0.2.0", features = ["serenity-rustls", "builtin-queue"] }
+async-trait = "0.1.51"
+tracing = "0.1"
+tracing-subscriber = "0.2"
+tracing-futures = "0.2"

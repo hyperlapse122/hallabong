@@ -9,7 +9,8 @@ use serenity::{
 use songbird::SerenityInit;
 
 mod general;
-use crate::general::GENERAL_GROUP;
+
+use crate::general::{GENERAL_GROUP, Handler};
 
 #[tokio::main]
 async fn main() {
@@ -21,6 +22,7 @@ async fn main() {
         .group(&GENERAL_GROUP);
 
     let mut client = ClientBuilder::new(&token)
+        .event_handler(Handler)
         .framework(framework)
         .register_songbird()
         .await
