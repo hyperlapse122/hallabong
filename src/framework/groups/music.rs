@@ -261,6 +261,7 @@ async fn deafen(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[only_in(guilds)]
+#[aliases("j")]
 async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.unwrap();
     let guild_id = guild.id;
@@ -330,6 +331,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[only_in(guilds)]
+#[aliases("l")]
 async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.unwrap();
     let guild_id = guild.id;
@@ -359,6 +361,7 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[only_in(guilds)]
+#[aliases("m")]
 async fn mute(ctx: &Context, msg: &Message) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.unwrap();
     let guild_id = guild.id;
@@ -463,6 +466,8 @@ async fn unmute(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[only_in(guilds)]
+#[num_args(1)]
+#[aliases("q")]
 async fn queue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = match args.single::<String>() {
         Ok(url) => url,
@@ -572,6 +577,7 @@ async fn skip(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
 #[command]
 #[only_in(guilds)]
+#[aliases("s")]
 async fn stop(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.unwrap();
     let guild_id = guild.id;
@@ -600,6 +606,7 @@ async fn stop(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
 #[command]
 #[only_in(guilds)]
+#[num_args(1)]
 async fn seek(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let time = match args.single::<u64>() {
         Ok(time) => time,
