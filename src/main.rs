@@ -1,7 +1,9 @@
+#![feature(in_band_lifetimes)]
+
 use std::env;
 
 use serenity::client::ClientBuilder;
-use songbird::SerenityInit;
+use crate::framework::AttachableClientBuilder;
 
 mod framework;
 
@@ -11,9 +13,7 @@ async fn main() {
         .expect("Expected a token in the environment");
 
     let mut client = ClientBuilder::new(&token)
-        .event_handler(framework::FrameworkManager::handler())
-        .framework(framework::FrameworkManager::framework())
-        .register_songbird()
+        .attach_framework()
         .await
         .expect("Err creating client");
 
