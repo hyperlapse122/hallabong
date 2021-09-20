@@ -13,6 +13,7 @@ use serenity::{
         gateway::Ready,
     },
 };
+use crate::framework::emoji;
 
 pub struct Handler;
 
@@ -27,10 +28,9 @@ impl EventHandler for Handler {
 #[commands(ping)]
 pub struct General;
 
-const CHECK_EMOJI: &str = "✅";
 
 #[command]
 async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
-    msg.react(&ctx.http, ReactionType::Unicode(CHECK_EMOJI.to_string())).await?;
+    msg.react(&ctx.http, ReactionType::Unicode(emoji::SUCCESS.to_string())).await?;
     Ok(())
 }

@@ -21,17 +21,14 @@ use serenity::{
     },
     http::Http,
     model::{
-        channel::Message,
+        channel::{Message, ReactionType},
         prelude::ChannelId,
     },
     Result as SerenityResult,
 };
 
-use songbird::{input::{
-    self,
-    restartable::Restartable,
-}, Event, EventContext, EventHandler as VoiceEventHandler, TrackEvent, create_player};
-use serenity::model::misc::Mentionable;
+use songbird::{input::restartable::Restartable, Event, EventContext, EventHandler as VoiceEventHandler, TrackEvent, create_player};
+use crate::framework::emoji;
 
 pub struct Handler;
 
@@ -39,11 +36,11 @@ pub struct Handler;
 impl EventHandler for Handler {}
 
 #[group]
-#[commands(play_fade, queue, skip, seek, stop, deafen, join, leave, mute, undeafen, unmute)]
+#[commands(queue, skip, seek, stop, deafen, join, leave, mute, undeafen, unmute)]
 pub struct Music;
 
 struct TrackEndNotifier {
-    chan_id: ChannelId,
+    channel_id: ChannelId,
     http: Arc<Http>,
 }
 
@@ -52,7 +49,7 @@ impl VoiceEventHandler for TrackEndNotifier {
     async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
         if let EventContext::Track(track_list) = ctx {
             check_msg(
-                self.chan_id
+                self.channel_id
                     .say(&self.http, &format!("Tracks ended: {}.", track_list[0].1.metadata().clone().title.unwrap_or("Unknown".to_string())))
                     .await,
             );
@@ -63,7 +60,7 @@ impl VoiceEventHandler for TrackEndNotifier {
 }
 
 struct ChannelDurationNotifier {
-    chan_id: ChannelId,
+    channel_id: ChannelId,
     count: Arc<AtomicUsize>,
     http: Arc<Http>,
 }
@@ -73,7 +70,7 @@ impl VoiceEventHandler for ChannelDurationNotifier {
     async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
         let count_before = self.count.fetch_add(1, Ordering::Relaxed);
         check_msg(
-            self.chan_id
+            self.channel_id
                 .say(
                     &self.http,
                     &format!(
@@ -85,119 +82,6 @@ impl VoiceEventHandler for ChannelDurationNotifier {
         );
 
         None
-    }
-}
-
-#[command]
-#[only_in(guilds)]
-async fn play_fade(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let url = match args.single::<String>() {
-        Ok(url) => url,
-        Err(_) => {
-            check_msg(
-                msg.channel_id
-                    .say(&ctx.http, "Must provide a URL to a video or audio")
-                    .await,
-            );
-
-            return Ok(());
-        }
-    };
-
-    if !url.starts_with("http") {
-        check_msg(
-            msg.channel_id
-                .say(&ctx.http, "Must provide a valid URL")
-                .await,
-        );
-
-        return Ok(());
-    }
-
-    let guild = msg.guild(&ctx.cache).await.unwrap();
-    let guild_id = guild.id;
-
-    let manager = songbird::get(ctx)
-        .await
-        .expect("Songbird Voice client placed in at initialisation.")
-        .clone();
-
-    if let Some(handler_lock) = manager.get(guild_id) {
-        let mut handler = handler_lock.lock().await;
-
-        let source = match input::ytdl(&url).await {
-            Ok(source) => source,
-            Err(why) => {
-                println!("Err starting source: {:?}", why);
-
-                check_msg(msg.channel_id.say(&ctx.http, "Error sourcing ffmpeg").await);
-
-                return Ok(());
-            }
-        };
-
-        // This handler object will allow you to, as needed,
-        // control the audio track via events and further commands.
-        let song = handler.play_source(source);
-        let send_http = ctx.http.clone();
-        let chan_id = msg.channel_id;
-
-        // This shows how to periodically fire an event, in this case to
-        // periodically make a track quieter until it can be no longer heard.
-        let _ = song.add_event(
-            Event::Periodic(Duration::from_secs(5), Some(Duration::from_secs(7))),
-            SongFader {
-                chan_id,
-                http: send_http,
-            },
-        );
-
-        let send_http = ctx.http.clone();
-
-        // This shows how to fire an event once an audio track completes,
-        // either due to hitting the end of the bytestream or stopped by user code.
-        let _ = song.add_event(
-            Event::Track(TrackEvent::End),
-            SongEndNotifier {
-                chan_id,
-                http: send_http,
-            },
-        );
-
-        check_msg(msg.channel_id.say(&ctx.http, "Playing song").await);
-    } else {
-        check_msg(
-            msg.channel_id
-                .say(&ctx.http, "Not in a voice channel to play in")
-                .await,
-        );
-    }
-
-    Ok(())
-}
-
-struct SongFader {
-    chan_id: ChannelId,
-    http: Arc<Http>,
-}
-
-#[async_trait]
-impl VoiceEventHandler for SongFader {
-    async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
-        if let EventContext::Track(&[(state, track)]) = ctx {
-            let _ = track.set_volume(state.volume / 2.0);
-
-            if state.volume < 1e-2 {
-                let _ = track.stop();
-                check_msg(self.chan_id.say(&self.http, "Stopping song...").await);
-                Some(Event::Cancel)
-            } else {
-                check_msg(self.chan_id.say(&self.http, "Volume reduced.").await);
-                None
-            }
-        } else {
-            None
-        }
     }
 }
 
@@ -272,7 +156,8 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     let connect_to = match channel_id {
         Some(channel) => channel,
         None => {
-            check_msg(msg.reply(ctx, "Not in a voice channel").await);
+            msg.react(&ctx.http, ReactionType::Unicode(emoji::FAILED.to_string())).await?;
+            msg.reply_ping(&ctx.http, "Not in a voice channel.").await?;
 
             return Ok(());
         }
@@ -286,11 +171,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     let (handle_lock, success) = manager.join(guild_id, connect_to).await;
 
     if let Ok(_channel) = success {
-        check_msg(
-            msg.channel_id
-                .say(&ctx.http, &format!("Joined {}", connect_to.mention()))
-                .await,
-        );
+        msg.react(&ctx.http, ReactionType::Unicode(emoji::SUCCESS.to_string())).await?;
 
         let chan_id = msg.channel_id;
 
@@ -301,7 +182,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         handle.add_global_event(
             Event::Track(TrackEvent::End),
             TrackEndNotifier {
-                chan_id,
+                channel_id: chan_id,
                 http: send_http,
             },
         );
@@ -311,17 +192,14 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         handle.add_global_event(
             Event::Periodic(Duration::from_secs(60), None),
             ChannelDurationNotifier {
-                chan_id,
+                channel_id: chan_id,
                 count: Default::default(),
                 http: send_http,
             },
         );
     } else {
-        check_msg(
-            msg.channel_id
-                .say(&ctx.http, "Error joining the channel")
-                .await,
-        );
+        msg.react(&ctx.http, ReactionType::Unicode(emoji::FAILED.to_string())).await?;
+        msg.reply_ping(&ctx.http, "Error joining the channel").await?;
     }
 
     Ok(())
@@ -349,9 +227,10 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
             );
         }
 
-        check_msg(msg.channel_id.say(&ctx.http, "Left voice channel").await);
+        msg.react(&ctx.http, ReactionType::Unicode(emoji::SUCCESS.to_string())).await?;
     } else {
-        check_msg(msg.reply(ctx, "Not in a voice channel").await);
+        msg.react(&ctx.http, ReactionType::Unicode(emoji::FAILED.to_string())).await?;
+        msg.reply_ping(&ctx.http, "Not in a voice channel to play in").await?;
     }
 
     Ok(())
@@ -519,20 +398,10 @@ async fn queue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         track.set_volume(0.25);
         handler.enqueue(track);
 
-        check_msg(
-            msg.channel_id
-                .say(
-                    &ctx.http,
-                    format!("Added song to queue: position {}", handler.queue().len()),
-                )
-                .await,
-        );
+        msg.react(&ctx.http, ReactionType::Unicode(emoji::SUCCESS.to_string())).await?;
     } else {
-        check_msg(
-            msg.channel_id
-                .say(&ctx.http, "Not in a voice channel to play in")
-                .await,
-        );
+        msg.react(&ctx.http, ReactionType::Unicode(emoji::FAILED.to_string())).await?;
+        msg.reply_ping(&ctx.http, "Not in a voice channel to play in").await?;
     }
 
     Ok(())
@@ -554,20 +423,10 @@ async fn skip(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         let queue = handler.queue();
         let _ = queue.skip();
 
-        check_msg(
-            msg.channel_id
-                .say(
-                    &ctx.http,
-                    format!("Song skipped: {} in queue.", queue.len()),
-                )
-                .await,
-        );
+        msg.react(&ctx.http, ReactionType::Unicode(emoji::SUCCESS.to_string())).await?;
     } else {
-        check_msg(
-            msg.channel_id
-                .say(&ctx.http, "Not in a voice channel to play in")
-                .await,
-        );
+        msg.react(&ctx.http, ReactionType::Unicode(emoji::FAILED.to_string())).await?;
+        msg.reply_ping(&ctx.http, "Not in a voice channel to play in").await?;
     }
 
     Ok(())
@@ -590,13 +449,10 @@ async fn stop(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         let queue = handler.queue();
         let _ = queue.stop();
 
-        check_msg(msg.channel_id.say(&ctx.http, "Queue cleared.").await);
+        msg.react(&ctx.http, ReactionType::Unicode(emoji::SUCCESS.to_string())).await?;
     } else {
-        check_msg(
-            msg.channel_id
-                .say(&ctx.http, "Not in a voice channel to play in")
-                .await,
-        );
+        msg.react(&ctx.http, ReactionType::Unicode(emoji::FAILED.to_string())).await?;
+        msg.reply_ping(&ctx.http, "Not in a voice channel to play in").await?;
     }
 
     Ok(())
@@ -635,27 +491,20 @@ async fn seek(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             if track_handle.is_seekable() {
                 match track_handle.seek_time(Duration::from_secs(time)) {
                     Ok(_) => {
-                        check_msg(msg.channel_id.say(&ctx.http, "Seek Success.").await);
+                        msg.react(&ctx.http, ReactionType::Unicode(emoji::SUCCESS.to_string())).await?;
                     }
                     Err(why) => {
                         println!("Track Seek Failed: {}", why.to_string());
-                        check_msg(msg.channel_id.say(&ctx.http, "There was an error.").await);
+                        msg.react(&ctx.http, ReactionType::Unicode(emoji::FAILED.to_string())).await?;
                     }
                 };
             } else {
-                check_msg(
-                    msg.channel_id
-                        .say(&ctx.http, "Not seekable content")
-                        .await,
-                );
+                msg.react(&ctx.http, ReactionType::Unicode(emoji::FAILED.to_string())).await?;
+                msg.reply_ping(&ctx.http, format!("{} is not seekable.", track_handle.metadata().title.clone().unwrap_or("Content".to_string()))).await?;
             }
         }
     } else {
-        check_msg(
-            msg.channel_id
-                .say(&ctx.http, "Not in a voice channel to play in")
-                .await,
-        );
+        msg.reply_ping(&ctx.http, format!("Not in a voice channel to play in")).await?;
     }
 
     Ok(())

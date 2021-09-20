@@ -1,6 +1,7 @@
 use serenity::{client::ClientBuilder, framework::StandardFramework};
 use songbird::SerenityInit;
 
+mod emoji;
 mod groups;
 mod handler;
 
