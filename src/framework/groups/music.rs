@@ -33,6 +33,7 @@ use songbird::{input::{
     restartable::Restartable,
 }, Event, EventContext, EventHandler as VoiceEventHandler, TrackEvent, create_player};
 use serenity::model::misc::Mentionable;
+use songbird::error::TrackResult;
 
 pub struct Handler;
 
@@ -40,7 +41,7 @@ pub struct Handler;
 impl EventHandler for Handler {}
 
 #[group]
-#[commands(play_fade, queue, skip, stop, deafen, join, leave, mute, undeafen, unmute)]
+#[commands(play_fade, queue, skip, seek, stop, deafen, join, leave, mute, undeafen, unmute)]
 pub struct Music;
 
 struct TrackEndNotifier {
@@ -54,7 +55,7 @@ impl VoiceEventHandler for TrackEndNotifier {
         if let EventContext::Track(track_list) = ctx {
             check_msg(
                 self.chan_id
-                    .say(&self.http, &format!("Tracks ended: {}.", track_list.len()))
+                    .say(&self.http, &format!("Tracks ended: {}.", track_list[0].1.metadata().clone().title.unwrap_or("Unknown".to_string())))
                     .await,
             );
         }
@@ -219,7 +220,6 @@ impl VoiceEventHandler for SongEndNotifier {
         None
     }
 }
-
 
 #[command]
 async fn deafen(ctx: &Context, msg: &Message) -> CommandResult {
@@ -587,6 +587,64 @@ async fn stop(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         let _ = queue.stop();
 
         check_msg(msg.channel_id.say(&ctx.http, "Queue cleared.").await);
+    } else {
+        check_msg(
+            msg.channel_id
+                .say(&ctx.http, "Not in a voice channel to play in")
+                .await,
+        );
+    }
+
+    Ok(())
+}
+
+#[command]
+#[only_in(guilds)]
+async fn seek(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let time = match args.single::<u64>() {
+        Ok(time) => time,
+        Err(_) => {
+            check_msg(
+                msg.channel_id
+                    .say(&ctx.http, "Must provide seek time by seconds")
+                    .await,
+            );
+
+            return Ok(());
+        }
+    };
+
+    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild_id = guild.id;
+
+    let manager = songbird::get(ctx)
+        .await
+        .expect("Songbird Voice client placed in at initialisation.")
+        .clone();
+
+    if let Some(handler_lock) = manager.get(guild_id) {
+        let handler = handler_lock.lock().await;
+        let queue = handler.queue();
+
+        if let Some(track_handle) = queue.current() {
+            if track_handle.is_seekable() {
+                match track_handle.seek_time(Duration::from_secs(time)) {
+                    Ok(_) => {
+                        check_msg(msg.channel_id.say(&ctx.http, "Seek Success.").await);
+                    }
+                    Err(why) => {
+                        println!("Track Seek Failed: {}", why.to_string());
+                        check_msg(msg.channel_id.say(&ctx.http, "There was an error.").await);
+                    }
+                };
+            } else {
+                check_msg(
+                    msg.channel_id
+                        .say(&ctx.http, "Not seekable content")
+                        .await,
+                );
+            }
+        }
     } else {
         check_msg(
             msg.channel_id
