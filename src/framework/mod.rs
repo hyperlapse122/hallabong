@@ -11,11 +11,13 @@ impl FrameworkManager {
         StandardFramework::new()
             .configure(|c| c.prefix("!"))
             .group(&groups::general::GENERAL_GROUP)
+            .group(&groups::music::MUSIC_GROUP)
     }
 
     pub fn handler() -> handler::EventHandler {
         let mut handler = handler::EventHandler::default();
         handler.register(Box::new(groups::general::Handler));
+        handler.register(Box::new(groups::music::Handler));
         handler
     }
 }
