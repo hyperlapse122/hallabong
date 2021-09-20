@@ -44,9 +44,7 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(
-deafen, join, leave, mute, play_fade, queue, skip, stop, ping, undeafen, unmute
-)]
+#[commands(deafen, join, leave, mute, play_fade, queue, skip, stop, ping, undeafen, unmute)]
 pub struct General;
 
 #[command]
