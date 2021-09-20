@@ -22,7 +22,6 @@ use serenity::{
     http::Http,
     model::{
         channel::Message,
-        gateway::Ready,
         prelude::ChannelId,
     },
     Result as SerenityResult,
@@ -33,7 +32,6 @@ use songbird::{input::{
     restartable::Restartable,
 }, Event, EventContext, EventHandler as VoiceEventHandler, TrackEvent, create_player};
 use serenity::model::misc::Mentionable;
-use songbird::error::TrackResult;
 
 pub struct Handler;
 
