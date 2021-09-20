@@ -1,11 +1,12 @@
 #![feature(in_band_lifetimes)]
 
+mod framework;
+
 use std::env;
 
 use serenity::client::ClientBuilder;
-use crate::framework::AttachableClientBuilder;
+use framework::AttachableClientBuilder;
 
-mod framework;
 
 #[tokio::main]
 async fn main() {
