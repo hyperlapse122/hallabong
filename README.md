@@ -10,5 +10,12 @@
 2. Create discord bot at [here](https://discord.com/developers/applications).
    1. Name the bot
    2. go to oAuth2 tab
-      1. Tick `bot` and `Send Messages`, `Read Message History`, `Speak`, `Add Reaction` below
+      1. Tick permissions below.
+         * `bot`
+         * `Send Messages`
+         * `Manage Messages`
+         * `Read Message History`
+         * `Connect`
+         * `Speak`
+         * `Add Reaction`
 3. Go to that oAuth2 link that generated to invite.

@@ -11,6 +11,8 @@ impl FrameworkManager {
     pub fn framework() -> StandardFramework {
         StandardFramework::new()
             .configure(|c| c.prefix("!"))
+            .before(groups::hooks::before)
+            .after(groups::hooks::after)
             .group(&groups::general::GENERAL_GROUP)
             .group(&groups::music::MUSIC_GROUP)
     }
