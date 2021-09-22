@@ -5,35 +5,38 @@ mod emoji;
 mod groups;
 mod handler;
 
-struct FrameworkManager;
+pub trait FrameworkBuilder<'a> {
+    fn attach_framework(self) -> Self;
+    fn attach_event_handler(self) -> Self;
+}
 
-impl FrameworkManager {
-    pub fn framework() -> StandardFramework {
-        StandardFramework::new()
+pub trait AttachableClientBuilder<'a> {
+    fn build(self) -> Self;
+}
+
+impl<'a> FrameworkBuilder<'a> for ClientBuilder<'a> {
+    fn attach_framework(self) -> Self {
+        let framework = StandardFramework::new()
             .configure(|c| c.prefix("!"))
             .before(groups::hooks::before)
             .after(groups::hooks::after)
             .group(&groups::general::GENERAL_GROUP)
-            .group(&groups::music::MUSIC_GROUP)
+            .group(&groups::music::MUSIC_GROUP);
+
+        self.framework(framework)
     }
 
-    pub fn handler() -> handler::EventHandler {
+    fn attach_event_handler(self) -> Self {
         let mut handler = handler::EventHandler::default();
         handler.register(Box::new(groups::general::Handler));
         handler.register(Box::new(groups::music::Handler));
-        handler
+
+        self.event_handler(handler)
     }
 }
 
-pub trait AttachableClientBuilder<'a> {
-    fn attach_framework(self) -> Self;
-}
-
 impl<'a> AttachableClientBuilder<'a> for ClientBuilder<'a> {
-    fn attach_framework(self) -> Self {
-        self
-            .framework(FrameworkManager::framework())
-            .event_handler(FrameworkManager::handler())
-            .register_songbird()
+    fn build(self) -> Self {
+        self.attach_framework().attach_event_handler().register_songbird()
     }
 }

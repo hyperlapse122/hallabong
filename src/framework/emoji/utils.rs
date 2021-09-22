@@ -1,4 +1,4 @@
-use serenity::model::channel::{Message, ReactionType, Reaction, MessageReaction};
+use serenity::model::channel::{Message, ReactionType, Reaction};
 use serenity::client::Context;
 use serenity::Result as SerenityResult;
 

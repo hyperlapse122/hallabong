@@ -6,13 +6,12 @@ pub async fn before(ctx: &Context, msg: &Message, command_name: &str) -> bool {
     println!("Got command '{}' by user '{}'", command_name, msg.author.name);
 
     match emoji::work_before(ctx, msg).await {
-        Ok(_) => {}
+        Ok(_) => true,
         Err(e) => {
-            msg.reply_ping(&ctx.http, format!("Emoji Reaction Remove Failed. problem was:\n```{}```", e.to_string())).await.ok();
+            msg.reply_ping(&ctx.http, format!("Emoji Reaction Failed. Solve it and try again. The problem was:\n```{}```", e.to_string())).await.ok();
+            false
         }
-    };
-
-    true // if `before` returns false, command processing doesn't happen.
+    }
 }
 
 #[hook]
@@ -20,12 +19,12 @@ pub async fn after(ctx: &Context, msg: &Message, command_name: &str, command_res
     match emoji::work_finished(ctx, msg).await {
         Ok(_) => {}
         Err(e) => {
-            msg.reply_ping(&ctx.http, format!("Emoji Reaction Remove Failed. problem was:\n```{}```", e.to_string())).await.ok();
+            msg.reply_ping(&ctx.http, format!("Emoji Reaction Remove Failed. The problem was:\n```{}```", e.to_string())).await.ok();
         }
     };
 
     match command_result {
         Ok(()) => println!("Processed command '{}'", command_name),
         Err(why) => println!("Command '{}' returned error {:?}", command_name, why),
-    }
+    };
 }
