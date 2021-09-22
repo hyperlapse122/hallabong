@@ -4,18 +4,16 @@ use serenity::{
         Context,
         EventHandler,
     },
-    framework::{
-        standard::{
-            macros::{command, group},
-            CommandResult,
-        },
+    framework::standard::{
+        macros::{command, group},
+        CommandResult,
     },
     model::{
-        channel::Message,
+        channel::{Message, ReactionType},
         gateway::Ready,
     },
-    Result as SerenityResult,
 };
+use crate::framework::emoji;
 
 pub struct Handler;
 
@@ -30,16 +28,9 @@ impl EventHandler for Handler {
 #[commands(ping)]
 pub struct General;
 
+
 #[command]
 async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
-    check_msg(msg.channel_id.say(&ctx.http, "Pong!").await);
-
+    msg.react(&ctx.http, ReactionType::Unicode(emoji::SUCCESS.to_string())).await?;
     Ok(())
-}
-
-/// Checks that a message successfully sent; if not, then logs why to stdout.
-fn check_msg(result: SerenityResult<Message>) {
-    if let Err(why) = result {
-        println!("Error sending message: {:?}", why);
-    }
 }
