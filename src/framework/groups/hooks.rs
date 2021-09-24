@@ -16,15 +16,24 @@ pub async fn before(ctx: &Context, msg: &Message, command_name: &str) -> bool {
 
 #[hook]
 pub async fn after(ctx: &Context, msg: &Message, command_name: &str, command_result: CommandResult) {
+    match command_result {
+        Ok(_) => {
+            println!("Processed command '{}'", command_name);
+
+            emoji::success(ctx, msg).await.ok();
+        }
+        Err(why) => {
+            println!("Command '{}' returned error {:?}", command_name, why);
+
+            emoji::failed(ctx, msg).await.ok();
+            msg.reply_ping(&ctx.http, format!("Command Failed. The problem was:\n```{}```", why)).await.ok();
+        }
+    };
+
     match emoji::work_finished(ctx, msg).await {
         Ok(_) => {}
         Err(e) => {
             msg.reply_ping(&ctx.http, format!("Emoji Reaction Remove Failed. The problem was:\n```{}```", e.to_string())).await.ok();
         }
-    };
-
-    match command_result {
-        Ok(()) => println!("Processed command '{}'", command_name),
-        Err(why) => println!("Command '{}' returned error {:?}", command_name, why),
     };
 }

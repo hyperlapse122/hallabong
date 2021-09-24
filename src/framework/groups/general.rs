@@ -9,11 +9,12 @@ use serenity::{
         CommandResult,
     },
     model::{
-        channel::{Message, ReactionType},
+        channel::Message,
         gateway::Ready,
     },
 };
-use crate::framework::emoji;
+use serenity::framework::standard::Args;
+use thiserror::Error as ThisError;
 
 pub struct Handler;
 
@@ -25,12 +26,25 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(ping)]
+#[commands(ping, echo)]
 pub struct General;
 
+#[derive(ThisError, Debug)]
+pub enum Error {
+    #[error("Arguments is wrong")]
+    Arguments,
+}
 
 #[command]
-async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
-    msg.react(&ctx.http, ReactionType::Unicode(emoji::SUCCESS.to_string())).await?;
+async fn ping(_ctx: &Context, _msg: &Message) -> CommandResult {
+    Ok(())
+}
+
+#[command]
+async fn echo(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let text = args.single::<String>().map_err(|_| Error::Arguments)?;
+
+    msg.reply(&ctx.http, text).await?;
+
     Ok(())
 }
