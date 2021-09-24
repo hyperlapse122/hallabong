@@ -1,16 +1,18 @@
 [package]
 name = "hallabong"
-authors = ["Joosung Park <iam@hyperlapse.dev>"]
+authors = [ "Joosung Park <iam@hyperlapse.dev>" ]
 version = "0.1.0"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1.11.0", features = ["macros", "rt-multi-thread"] }
-serenity = { default-features = false, features = ["client", "standard_framework", "voice", "gateway", "model", "rustls_backend", "cache"], version = "0.10.9" }
-songbird = { version = "0.2.0", features = ["serenity-rustls", "builtin-queue"] }
+anyhow = "1.0.44"
 async-trait = "0.1.51"
+serenity = { version = "0.10.9", default-features = false, features = [ "client", "standard_framework", "voice", "gateway", "model", "rustls_backend", "cache" ] }
+songbird = { version = "0.2.0", features = [ "serenity-rustls", "builtin-queue" ] }
+thiserror = "1.0.29"
+tokio = { version = "1.11.0", features = [ "macros", "rt-multi-thread" ] }
 tracing = "0.1"
-tracing-subscriber = "0.2"
 tracing-futures = "0.2"
+tracing-subscriber = "0.2"
