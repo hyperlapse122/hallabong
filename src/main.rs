@@ -4,16 +4,16 @@ mod framework;
 
 use std::env;
 
-use serenity::client::ClientBuilder;
 use framework::AttachableClientBuilder;
-
+use serenity::client::ClientBuilder;
 
 #[tokio::main]
 async fn main() {
-    let token = env::var("DISCORD_TOKEN")
-        .expect("Expected a token in the environment");
+    let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
-    let mut client = ClientBuilder::new(&token).build().await
+    let mut client = ClientBuilder::new(&token)
+        .build()
+        .await
         .expect("Err creating client");
 
     if let Err(why) = client.start().await {

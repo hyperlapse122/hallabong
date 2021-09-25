@@ -1,4 +1,8 @@
-use serenity::{async_trait, client::{EventHandler as EventHandlerBase, Context}, model::gateway::Ready};
+use serenity::{
+    async_trait,
+    client::{Context, EventHandler as EventHandlerBase},
+    model::gateway::Ready,
+};
 
 pub struct EventHandler {
     handlers: Vec<Box<dyn EventHandlerBase>>,

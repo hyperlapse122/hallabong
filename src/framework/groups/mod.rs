@@ -1,3 +1,3 @@
 pub mod general;
-pub mod music;
 pub mod hooks;
+pub mod music;
