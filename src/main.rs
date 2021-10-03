@@ -9,6 +9,8 @@ use serenity::client::ClientBuilder;
 
 #[tokio::main]
 async fn main() {
+    env_logger::init();
+
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
 
     let mut client = ClientBuilder::new(&token)
