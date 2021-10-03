@@ -8,25 +8,19 @@ use std::{
 
 use serenity::{
     async_trait,
-    client::{
-        Context,
-        EventHandler,
-    },
-    framework::{
-        standard::{
-            macros::{command, group},
-            Args,
-            CommandResult,
-        },
+    client::{Context, EventHandler},
+    framework::standard::{
+        macros::{command, group},
+        Args, CommandResult,
     },
     http::Http,
-    model::{
-        channel::Message,
-        prelude::ChannelId,
-    },
+    model::{channel::Message, prelude::ChannelId},
 };
 
-use songbird::{input::restartable::Restartable, Event, EventContext, EventHandler as VoiceEventHandler, TrackEvent, create_player};
+use songbird::{
+    create_player, input::restartable::Restartable, Event, EventContext,
+    EventHandler as VoiceEventHandler, TrackEvent,
+};
 use thiserror::Error as ThisError;
 
 pub struct Handler;
@@ -70,8 +64,20 @@ impl VoiceEventHandler for TrackEndNotifier {
     async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
         if let EventContext::Track(track_list) = ctx {
             self.channel_id
-                .say(&self.http, &format!("Tracks ended: {}.", track_list[0].1.metadata().clone().title.unwrap_or("Unknown".to_string())))
-                .await.ok()?;
+                .say(
+                    &self.http,
+                    &format!(
+                        "Tracks ended: {}.",
+                        track_list[0]
+                            .1
+                            .metadata()
+                            .clone()
+                            .title
+                            .unwrap_or("Unknown".to_string())
+                    ),
+                )
+                .await
+                .ok()?;
         }
 
         None
@@ -88,7 +94,16 @@ struct ChannelDurationNotifier {
 impl VoiceEventHandler for ChannelDurationNotifier {
     async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
         let count_before = self.count.fetch_add(1, Ordering::Relaxed);
-        self.channel_id.say(&self.http, &format!("I've been in this channel for {} minutes!", count_before + 1)).await.ok()?;
+        self.channel_id
+            .say(
+                &self.http,
+                &format!(
+                    "I've been in this channel for {} minutes!",
+                    count_before + 1
+                ),
+            )
+            .await
+            .ok()?;
 
         None
     }
@@ -102,7 +117,10 @@ struct SongEndNotifier {
 #[async_trait]
 impl VoiceEventHandler for SongEndNotifier {
     async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
-        self.channel_id.say(&self.http, "Song faded out completely!").await.ok()?;
+        self.channel_id
+            .say(&self.http, "Song faded out completely!")
+            .await
+            .ok()?;
 
         None
     }
@@ -112,7 +130,10 @@ impl VoiceEventHandler for SongEndNotifier {
 async fn deafen(ctx: &Context, msg: &Message) -> CommandResult {
     let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
 
-    let manager = songbird::get(ctx).await.ok_or(Error::SongbirdInitialization)?.clone();
+    let manager = songbird::get(ctx)
+        .await
+        .ok_or(Error::SongbirdInitialization)?
+        .clone();
 
     let handler_lock = manager.get(guild_id).ok_or(Error::NotInVoiceChannel)?;
 
@@ -122,7 +143,10 @@ async fn deafen(ctx: &Context, msg: &Message) -> CommandResult {
         Err(Error::AlreadyDeafened)?;
     }
 
-    handler.deafen(true).await.map_err(|e| Error::Other(e.into()))?;
+    handler
+        .deafen(true)
+        .await
+        .map_err(|e| Error::Other(e.into()))?;
 
     Ok(())
 }
@@ -137,9 +161,13 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     let channel_id = guild
         .voice_states
         .get(&msg.author.id)
-        .and_then(|voice_state| voice_state.channel_id).ok_or(Error::NotInVoiceChannel)?;
+        .and_then(|voice_state| voice_state.channel_id)
+        .ok_or(Error::NotInVoiceChannel)?;
 
-    let manager = songbird::get(ctx).await.ok_or(Error::SongbirdInitialization)?.clone();
+    let manager = songbird::get(ctx)
+        .await
+        .ok_or(Error::SongbirdInitialization)?
+        .clone();
 
     let (handle_lock, success) = manager.join(guild_id, channel_id).await;
 
@@ -179,11 +207,17 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
     let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
 
-    let manager = songbird::get(ctx).await.ok_or(Error::SongbirdInitialization)?.clone();
+    let manager = songbird::get(ctx)
+        .await
+        .ok_or(Error::SongbirdInitialization)?
+        .clone();
 
     manager.get(guild_id).ok_or(Error::NotInVoiceChannel)?;
 
-    manager.remove(guild_id).await.map_err(|e| Error::Other(e.into()))?;
+    manager
+        .remove(guild_id)
+        .await
+        .map_err(|e| Error::Other(e.into()))?;
 
     Ok(())
 }
@@ -194,7 +228,10 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
 async fn mute(ctx: &Context, msg: &Message) -> CommandResult {
     let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
 
-    let manager = songbird::get(ctx).await.ok_or(Error::SongbirdInitialization)?.clone();
+    let manager = songbird::get(ctx)
+        .await
+        .ok_or(Error::SongbirdInitialization)?
+        .clone();
 
     let handler_lock = manager.get(guild_id).ok_or(Error::NotInVoiceChannel)?;
 
@@ -203,7 +240,10 @@ async fn mute(ctx: &Context, msg: &Message) -> CommandResult {
     if handler.is_mute() {
         Err(Error::AlreadyMuted)?;
     }
-    handler.mute(true).await.map_err(|e| Error::Other(e.into()))?;
+    handler
+        .mute(true)
+        .await
+        .map_err(|e| Error::Other(e.into()))?;
 
     Ok(())
 }
@@ -212,12 +252,18 @@ async fn mute(ctx: &Context, msg: &Message) -> CommandResult {
 #[only_in(guilds)]
 async fn undeafen(ctx: &Context, msg: &Message) -> CommandResult {
     let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
-    let manager = songbird::get(ctx).await.ok_or(Error::SongbirdInitialization)?.clone();
+    let manager = songbird::get(ctx)
+        .await
+        .ok_or(Error::SongbirdInitialization)?
+        .clone();
 
     let handler_lock = manager.get(guild_id).ok_or(Error::NotInVoiceChannel)?;
     let mut handler = handler_lock.lock().await;
 
-    handler.deafen(false).await.map_err(|e| Error::Other(e.into()))?;
+    handler
+        .deafen(false)
+        .await
+        .map_err(|e| Error::Other(e.into()))?;
 
     Ok(())
 }
@@ -226,12 +272,18 @@ async fn undeafen(ctx: &Context, msg: &Message) -> CommandResult {
 #[only_in(guilds)]
 async fn unmute(ctx: &Context, msg: &Message) -> CommandResult {
     let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
-    let manager = songbird::get(ctx).await.ok_or(Error::SongbirdInitialization)?.clone();
+    let manager = songbird::get(ctx)
+        .await
+        .ok_or(Error::SongbirdInitialization)?
+        .clone();
 
     let handler_lock = manager.get(guild_id).ok_or(Error::NotInVoiceChannel)?;
     let mut handler = handler_lock.lock().await;
 
-    handler.mute(false).await.map_err(|e| Error::Other(e.into()))?;
+    handler
+        .mute(false)
+        .await
+        .map_err(|e| Error::Other(e.into()))?;
 
     Ok(())
 }
@@ -241,21 +293,28 @@ async fn unmute(ctx: &Context, msg: &Message) -> CommandResult {
 #[num_args(1)]
 #[aliases("q")]
 async fn queue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let url = args.single::<String>().map_err(|_| Error::InvalidArguments)?;
+    let url = args
+        .single::<String>()
+        .map_err(|_| Error::InvalidArguments)?;
 
     if !url.starts_with("http") {
         Err(Error::InvalidArguments)?;
     }
 
     let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
-    let manager = songbird::get(ctx).await.ok_or(Error::SongbirdInitialization)?.clone();
+    let manager = songbird::get(ctx)
+        .await
+        .ok_or(Error::SongbirdInitialization)?
+        .clone();
 
     let handler_lock = manager.get(guild_id).ok_or(Error::NotInVoiceChannel)?;
     let mut handler = handler_lock.lock().await;
 
     // Here, we use lazy restartable sources to make sure that we don't pay
     // for decoding, playback on tracks which aren't actually live yet.
-    let source = Restartable::ytdl(url, true).await.map_err(|e| Error::Other(e.into()))?;
+    let source = Restartable::ytdl(url, true)
+        .await
+        .map_err(|e| Error::Other(e.into()))?;
 
     let (mut track, _) = create_player(source.into());
 
@@ -269,7 +328,10 @@ async fn queue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 #[only_in(guilds)]
 async fn skip(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
-    let manager = songbird::get(ctx).await.ok_or(Error::SongbirdInitialization)?.clone();
+    let manager = songbird::get(ctx)
+        .await
+        .ok_or(Error::SongbirdInitialization)?
+        .clone();
 
     let handler_lock = manager.get(guild_id).ok_or(Error::NotInVoiceChannel)?;
     let handler = handler_lock.lock().await;
@@ -285,7 +347,10 @@ async fn skip(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 #[aliases("s")]
 async fn stop(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
-    let manager = songbird::get(ctx).await.ok_or(Error::SongbirdInitialization)?.clone();
+    let manager = songbird::get(ctx)
+        .await
+        .ok_or(Error::SongbirdInitialization)?
+        .clone();
 
     let handler_lock = manager.get(guild_id).ok_or(Error::NotInVoiceChannel)?;
     let handler = handler_lock.lock().await;
@@ -303,7 +368,10 @@ async fn seek(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let time = args.single::<u64>().map_err(|_| Error::InvalidArguments)?;
 
     let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
-    let manager = songbird::get(ctx).await.ok_or(Error::SongbirdInitialization)?.clone();
+    let manager = songbird::get(ctx)
+        .await
+        .ok_or(Error::SongbirdInitialization)?
+        .clone();
 
     let handler_lock = manager.get(guild_id).ok_or(Error::NotInVoiceChannel)?;
     let handler = handler_lock.lock().await;
@@ -313,7 +381,9 @@ async fn seek(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let track_handle = queue.current().ok_or(Error::Unknown)?;
 
     if track_handle.is_seekable() {
-        track_handle.seek_time(Duration::from_secs(time)).map_err(|e| Error::Other(e.into()))?;
+        track_handle
+            .seek_time(Duration::from_secs(time))
+            .map_err(|e| Error::Other(e.into()))?;
     } else {
         Err(Error::NotSeekable)?;
     }

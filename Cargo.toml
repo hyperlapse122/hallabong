@@ -9,6 +9,8 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.44"
 async-trait = "0.1.51"
+env_logger = "0.9.0"
+log = "0.4.14"
 serenity = { version = "0.10.9", default-features = false, features = [ "client", "standard_framework", "voice", "gateway", "model", "rustls_backend", "cache" ] }
 songbird = { version = "0.2.0", features = [ "serenity-rustls", "builtin-queue" ] }
 thiserror = "1.0.29"

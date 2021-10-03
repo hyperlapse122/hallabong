@@ -1,19 +1,13 @@
+use serenity::framework::standard::Args;
 use serenity::{
     async_trait,
-    client::{
-        Context,
-        EventHandler,
-    },
+    client::{Context, EventHandler},
     framework::standard::{
         macros::{command, group},
         CommandResult,
     },
-    model::{
-        channel::Message,
-        gateway::Ready,
-    },
+    model::{channel::Message, gateway::Ready},
 };
-use serenity::framework::standard::Args;
 use thiserror::Error as ThisError;
 
 pub struct Handler;

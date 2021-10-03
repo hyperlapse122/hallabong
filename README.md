@@ -14,6 +14,7 @@
          * `bot`
          * `Send Messages`
          * `Manage Messages`
+         * `Embed Links`
          * `Read Message History`
          * `Connect`
          * `Speak`
