@@ -1,7 +1,7 @@
 use std::{
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc,
+        atomic::{AtomicUsize, Ordering},
     },
     time::Duration,
 };
@@ -10,18 +10,18 @@ use serenity::{
     async_trait,
     client::{Context, EventHandler},
     framework::standard::{
-        macros::{command, group},
-        Args, CommandResult,
+        Args,
+        CommandResult, macros::{command, group},
     },
     http::Http,
     model::{channel::Message, prelude::ChannelId},
 };
-
 use songbird::{
-    create_player, input::restartable::Restartable, Event, EventContext,
-    EventHandler as VoiceEventHandler, TrackEvent,
+    create_player, Event, EventContext, EventHandler as VoiceEventHandler,
+    input::restartable::Restartable, TrackEvent,
 };
-use thiserror::Error as ThisError;
+
+use super::super::error::Error;
 
 pub struct Handler;
 
@@ -31,28 +31,6 @@ impl EventHandler for Handler {}
 #[group]
 #[commands(queue, skip, seek, stop, deafen, join, leave, mute, undeafen, unmute)]
 pub struct Music;
-
-#[derive(ThisError, Debug)]
-pub enum Error {
-    #[error("Invalid Arguments")]
-    InvalidArguments,
-
-    #[error("Already deafened")]
-    AlreadyDeafened,
-    #[error("Already muted")]
-    AlreadyMuted,
-    #[error("Not in voice channel")]
-    NotInVoiceChannel,
-    #[error("Not seekable")]
-    NotSeekable,
-    #[error("Songbird Voice client placed in at initialization")]
-    SongbirdInitialization,
-
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
-    #[error("Unknown Error")]
-    Unknown,
-}
 
 struct TrackEndNotifier {
     channel_id: ChannelId,
@@ -87,23 +65,18 @@ impl VoiceEventHandler for TrackEndNotifier {
 struct ChannelDurationNotifier {
     channel_id: ChannelId,
     count: Arc<AtomicUsize>,
-    http: Arc<Http>,
 }
 
 #[async_trait]
 impl VoiceEventHandler for ChannelDurationNotifier {
     async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
         let count_before = self.count.fetch_add(1, Ordering::Relaxed);
-        self.channel_id
-            .say(
-                &self.http,
-                &format!(
-                    "I've been in this channel for {} minutes!",
-                    count_before + 1
-                ),
-            )
-            .await
-            .ok()?;
+
+        println!("{}", format!(
+            "I've been in {} for {} minutes!",
+            self.channel_id.0,
+            count_before + 1
+        ));
 
         None
     }
@@ -187,14 +160,11 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         },
     );
 
-    let send_http = ctx.http.clone();
-
     handle.add_global_event(
         Event::Periodic(Duration::from_secs(60), None),
         ChannelDurationNotifier {
             channel_id: chan_id,
             count: Default::default(),
-            http: send_http,
         },
     );
 

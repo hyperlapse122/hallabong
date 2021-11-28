@@ -2,9 +2,10 @@ use serenity::{client::ClientBuilder, framework::StandardFramework};
 use songbird::SerenityInit;
 
 mod emoji;
-mod groups;
+pub(crate) mod groups;
 mod handler;
 mod help;
+mod error;
 
 pub trait FrameworkBuilder<'a> {
     fn attach_framework(self) -> Self;
@@ -23,6 +24,7 @@ impl<'a> FrameworkBuilder<'a> for ClientBuilder<'a> {
             .after(groups::hooks::after)
             .help(&help::HELP_COMMAND)
             .group(&groups::general::GENERAL_GROUP)
+            .group(&groups::translate::TRANSLATE_GROUP)
             .group(&groups::music::MUSIC_GROUP);
 
         self.framework(framework)

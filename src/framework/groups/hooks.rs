@@ -1,9 +1,10 @@
-use crate::framework::emoji::utils as emoji;
 use serenity::{
     client::Context,
-    framework::standard::{macros::hook, CommandResult},
+    framework::standard::{CommandResult, macros::hook},
     model::channel::Message,
 };
+
+use crate::framework::emoji::utils as emoji;
 
 #[hook]
 pub async fn before(ctx: &Context, msg: &Message, command_name: &str) -> bool {
@@ -22,8 +23,8 @@ pub async fn before(ctx: &Context, msg: &Message, command_name: &str) -> bool {
                     e.to_string()
                 ),
             )
-            .await
-            .ok();
+                .await
+                .ok();
             false
         }
     }
@@ -36,6 +37,20 @@ pub async fn after(
     command_name: &str,
     command_result: CommandResult,
 ) {
+    match emoji::work_finished(ctx, msg).await {
+        Ok(_) => {}
+        Err(e) => {
+            msg.reply_ping(
+                &ctx.http,
+                format!(
+                    "Emoji Reaction Remove Failed. The problem was:\n```{}```",
+                    e.to_string()
+                ),
+            )
+                .await
+                .ok();
+        }
+    };
     match command_result {
         Ok(_) => {
             println!("Processed command '{}'", command_name);
@@ -50,23 +65,8 @@ pub async fn after(
                 &ctx.http,
                 format!("Command Failed. The problem was:\n```{}```", why),
             )
-            .await
-            .ok();
-        }
-    };
-
-    match emoji::work_finished(ctx, msg).await {
-        Ok(_) => {}
-        Err(e) => {
-            msg.reply_ping(
-                &ctx.http,
-                format!(
-                    "Emoji Reaction Remove Failed. The problem was:\n```{}```",
-                    e.to_string()
-                ),
-            )
-            .await
-            .ok();
+                .await
+                .ok();
         }
     };
 }
