@@ -73,7 +73,7 @@ impl VoiceEventHandler for TrackEndNotifier {
                             .metadata()
                             .clone()
                             .title
-                            .unwrap_or("Unknown".to_string())
+                            .unwrap_or_else(|| "Unknown".to_string())
                     ),
                 )
                 .await

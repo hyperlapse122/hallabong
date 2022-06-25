@@ -1,5 +1,3 @@
-#![feature(in_band_lifetimes)]
-
 mod framework;
 
 use std::env;
@@ -9,6 +7,7 @@ use serenity::client::ClientBuilder;
 
 #[tokio::main]
 async fn main() {
+    dotenv::dotenv().ok();
     env_logger::init();
 
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
