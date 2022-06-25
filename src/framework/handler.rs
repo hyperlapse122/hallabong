@@ -3,17 +3,11 @@ use serenity::{
     client::{Context, EventHandler as EventHandlerBase},
     model::gateway::Ready,
 };
+use serenity::model::channel::Reaction;
 
+#[derive(Default)]
 pub struct EventHandler {
     handlers: Vec<Box<dyn EventHandlerBase>>,
-}
-
-impl Default for EventHandler {
-    fn default() -> Self {
-        Self {
-            handlers: Vec::new(),
-        }
-    }
 }
 
 impl EventHandler {
@@ -24,6 +18,12 @@ impl EventHandler {
 
 #[async_trait]
 impl EventHandlerBase for EventHandler {
+    async fn reaction_add(&self, _ctx: Context, _add_reaction: Reaction) {
+        for handler in self.handlers.iter() {
+            handler.reaction_add(_ctx.clone(), _add_reaction.clone()).await;
+        }
+    }
+
     async fn ready(&self, c: Context, r: Ready) {
         for handler in self.handlers.iter() {
             handler.ready(c.clone(), r.clone()).await;

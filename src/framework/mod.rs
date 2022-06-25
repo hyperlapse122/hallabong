@@ -34,6 +34,7 @@ impl<'a> FrameworkBuilder<'a> for ClientBuilder<'a> {
         let mut handler = handler::EventHandler::default();
         handler.register(Box::new(groups::general::Handler));
         handler.register(Box::new(groups::music::Handler));
+        handler.register(Box::new(groups::translate::Handler));
 
         self.event_handler(handler)
     }

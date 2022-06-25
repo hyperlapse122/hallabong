@@ -71,12 +71,7 @@ struct ChannelDurationNotifier {
 impl VoiceEventHandler for ChannelDurationNotifier {
     async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
         let count_before = self.count.fetch_add(1, Ordering::Relaxed);
-
-        println!("{}", format!(
-            "I've been in {} for {} minutes!",
-            self.channel_id.0,
-            count_before + 1
-        ));
+        println!("I've been in {} for {} minutes!", self.channel_id.0, count_before + 1);
 
         None
     }
