@@ -1,5 +1,3 @@
-#![feature(in_band_lifetimes)]
-
 extern crate google_translate3 as translate3;
 extern crate html_escape;
 extern crate hyper;
@@ -14,13 +12,14 @@ use serenity::client::ClientBuilder;
 use tokio::sync::RwLock;
 use translate3::Translate;
 
-use framework::AttachableClientBuilder;
 use framework::groups::translate::{GoogleProjectId, GoogleTranslate, LastTranslationLanguageCache};
+use crate::framework::AttachableClientBuilder;
 
 mod framework;
 
 #[tokio::main]
 async fn main() {
+    dotenv::dotenv().ok();
     env_logger::init();
 
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
