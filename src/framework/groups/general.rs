@@ -1,14 +1,15 @@
-use serenity::framework::standard::Args;
 use serenity::{
     async_trait,
     client::{Context, EventHandler},
     framework::standard::{
-        macros::{command, group},
         CommandResult,
+        macros::{command, group},
     },
     model::{channel::Message, gateway::Ready},
 };
-use thiserror::Error as ThisError;
+use serenity::framework::standard::Args;
+
+use super::super::error::Error;
 
 pub struct Handler;
 
@@ -23,12 +24,6 @@ impl EventHandler for Handler {
 #[commands(ping, echo)]
 pub struct General;
 
-#[derive(ThisError, Debug)]
-pub enum Error {
-    #[error("Arguments is wrong")]
-    Arguments,
-}
-
 #[command]
 async fn ping(_ctx: &Context, _msg: &Message) -> CommandResult {
     Ok(())
@@ -36,7 +31,7 @@ async fn ping(_ctx: &Context, _msg: &Message) -> CommandResult {
 
 #[command]
 async fn echo(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let text = args.single::<String>().map_err(|_| Error::Arguments)?;
+    let text = args.single::<String>().map_err(|_| Error::InvalidArguments)?;
 
     msg.reply(&ctx.http, text).await?;
 
