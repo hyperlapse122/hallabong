@@ -20,6 +20,7 @@ use songbird::{
     create_player, Event, EventContext, EventHandler as VoiceEventHandler,
     input::restartable::Restartable, TrackEvent,
 };
+use songbird::driver::Bitrate;
 
 use super::super::error::Error;
 
@@ -126,11 +127,15 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?;
     let guild_id = guild.id;
 
-    let channel_id = guild
+    let channel = guild
         .voice_states
         .get(&msg.author.id)
-        .and_then(|voice_state| voice_state.channel_id)
         .ok_or(Error::NotInVoiceChannel)?;
+
+
+    let channel_id = channel.channel_id.ok_or(Error::NotInVoiceChannel)?;
+    let guild_channel = guild.channels.get(&channel_id).ok_or(Error::Unknown)?;
+    let bitrate = guild_channel.bitrate.ok_or(Error::Unknown)?;
 
     let manager = songbird::get(ctx)
         .await
@@ -147,6 +152,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 
     let mut handle = handle_lock.lock().await;
 
+    handle.set_bitrate(Bitrate::BitsPerSecond(bitrate as i32));
     handle.add_global_event(
         Event::Track(TrackEvent::End),
         TrackEndNotifier {
