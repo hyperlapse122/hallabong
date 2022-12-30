@@ -9,10 +9,12 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use serenity::client::ClientBuilder;
+use serenity::prelude::GatewayIntents;
 use tokio::sync::RwLock;
 use translate3::Translate;
 
 use framework::groups::translate::{GoogleProjectId, GoogleTranslate, LastTranslationLanguageCache};
+
 use crate::framework::AttachableClientBuilder;
 
 mod framework;
@@ -34,7 +36,13 @@ async fn main() {
 
     let hub = Translate::new(hyper::Client::builder().build(hyper_rustls::HttpsConnector::with_native_roots()), auth);
 
-    let mut client = ClientBuilder::new(&token)
+    let intents = GatewayIntents::GUILDS
+        .union(GatewayIntents::GUILD_MESSAGES)
+        .union(GatewayIntents::MESSAGE_CONTENT)
+        .union(GatewayIntents::GUILD_MESSAGE_REACTIONS)
+        .union(GatewayIntents::GUILD_VOICE_STATES);
+
+    let mut client = ClientBuilder::new(&token, intents)
         .build()
         .await
         .expect("Err creating client");
