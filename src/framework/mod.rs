@@ -16,7 +16,7 @@ pub trait AttachableClientBuilder<'a> {
     fn build(self) -> Self;
 }
 
-impl<'a> FrameworkBuilder<'a> for ClientBuilder<'a> {
+impl FrameworkBuilder<'_> for ClientBuilder {
     fn attach_framework(self) -> Self {
         let framework = StandardFramework::new()
             .configure(|c| c.prefix("!"))
@@ -40,7 +40,7 @@ impl<'a> FrameworkBuilder<'a> for ClientBuilder<'a> {
     }
 }
 
-impl<'a> AttachableClientBuilder<'a> for ClientBuilder<'a> {
+impl AttachableClientBuilder<'_> for ClientBuilder {
     fn build(self) -> Self {
         self.attach_framework()
             .attach_event_handler()

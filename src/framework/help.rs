@@ -31,6 +31,6 @@ pub async fn help_command(
 ) -> CommandResult {
     help_commands::with_embeds(context, msg, args, help_options, groups, owners)
         .await
-        .ok_or(Error::Unknown)?;
+        .map_err(|_| Error::Unknown)?;
     Ok(())
 }

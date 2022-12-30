@@ -16,10 +16,12 @@ use serenity::{
     http::Http,
     model::{channel::Message, prelude::ChannelId},
 };
+use serenity::model::channel::Channel;
 use songbird::{
     create_player, Event, EventContext, EventHandler as VoiceEventHandler,
     input::restartable::Restartable, TrackEvent,
 };
+use songbird::driver::Bitrate;
 
 use super::super::error::Error;
 
@@ -96,7 +98,7 @@ impl VoiceEventHandler for SongEndNotifier {
 
 #[command]
 async fn deafen(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
+    let guild_id = msg.guild(&ctx.cache).ok_or(Error::Unknown)?.id;
 
     let manager = songbird::get(ctx)
         .await
@@ -123,14 +125,21 @@ async fn deafen(ctx: &Context, msg: &Message) -> CommandResult {
 #[only_in(guilds)]
 #[aliases("j")]
 async fn join(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?;
+    let guild = msg.guild(&ctx.cache).unwrap();
     let guild_id = guild.id;
 
-    let channel_id = guild
+    let channel = guild
         .voice_states
         .get(&msg.author.id)
-        .and_then(|voice_state| voice_state.channel_id)
         .ok_or(Error::NotInVoiceChannel)?;
+
+
+    let channel_id = channel.channel_id.ok_or(Error::NotInVoiceChannel)?;
+    let guild_channel = guild.channels.get(&channel_id).ok_or(Error::Unknown)?;
+    let bitrate = match guild_channel {
+        Channel::Guild(e) => { e.bitrate.ok_or(Error::NotInVoiceChannel) }
+        _ => { Err(Error::NotInVoiceChannel) }
+    }?;
 
     let manager = songbird::get(ctx)
         .await
@@ -147,6 +156,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 
     let mut handle = handle_lock.lock().await;
 
+    handle.set_bitrate(Bitrate::BitsPerSecond(bitrate as i32));
     handle.add_global_event(
         Event::Track(TrackEvent::End),
         TrackEndNotifier {
@@ -170,7 +180,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 #[only_in(guilds)]
 #[aliases("l")]
 async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
+    let guild_id = msg.guild(&ctx.cache).ok_or(Error::Unknown)?.id;
 
     let manager = songbird::get(ctx)
         .await
@@ -191,7 +201,7 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
 #[only_in(guilds)]
 #[aliases("m")]
 async fn mute(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
+    let guild_id = msg.guild(&ctx.cache).ok_or(Error::Unknown)?.id;
 
     let manager = songbird::get(ctx)
         .await
@@ -216,7 +226,7 @@ async fn mute(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[only_in(guilds)]
 async fn undeafen(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
+    let guild_id = msg.guild(&ctx.cache).ok_or(Error::Unknown)?.id;
     let manager = songbird::get(ctx)
         .await
         .ok_or(Error::SongbirdInitialization)?
@@ -236,7 +246,7 @@ async fn undeafen(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[only_in(guilds)]
 async fn unmute(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
+    let guild_id = msg.guild(&ctx.cache).ok_or(Error::Unknown)?.id;
     let manager = songbird::get(ctx)
         .await
         .ok_or(Error::SongbirdInitialization)?
@@ -266,7 +276,7 @@ async fn queue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         Err(Error::InvalidArguments)?;
     }
 
-    let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
+    let guild_id = msg.guild(&ctx.cache).ok_or(Error::Unknown)?.id;
     let manager = songbird::get(ctx)
         .await
         .ok_or(Error::SongbirdInitialization)?
@@ -292,7 +302,7 @@ async fn queue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 #[command]
 #[only_in(guilds)]
 async fn skip(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
-    let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
+    let guild_id = msg.guild(&ctx.cache).ok_or(Error::Unknown)?.id;
     let manager = songbird::get(ctx)
         .await
         .ok_or(Error::SongbirdInitialization)?
@@ -311,7 +321,7 @@ async fn skip(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 #[only_in(guilds)]
 #[aliases("s")]
 async fn stop(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
-    let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
+    let guild_id = msg.guild(&ctx.cache).ok_or(Error::Unknown)?.id;
     let manager = songbird::get(ctx)
         .await
         .ok_or(Error::SongbirdInitialization)?
@@ -332,7 +342,7 @@ async fn stop(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 async fn seek(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let time = args.single::<u64>().map_err(|_| Error::InvalidArguments)?;
 
-    let guild_id = msg.guild(&ctx.cache).await.ok_or(Error::Unknown)?.id;
+    let guild_id = msg.guild(&ctx.cache).ok_or(Error::Unknown)?.id;
     let manager = songbird::get(ctx)
         .await
         .ok_or(Error::SongbirdInitialization)?
