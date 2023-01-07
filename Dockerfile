@@ -4,9 +4,7 @@ FROM rust:latest AS builder
 WORKDIR /usr/src/project
 
 RUN set -eux; \
-    apt-get update && apt-get install -y musl-dev youtube-dl ffmpeg libopus-dev cmake build-essential autoconf automake libtool m4; \
-    cargo install cargo-chef; \
-    rm -rf $CARGO_HOME/registry \
+    apt-get update && apt-get install -y musl-dev youtube-dl ffmpeg libopus-dev cmake build-essential autoconf automake libtool m4;
 
 COPY . .
 RUN cargo build --release
