@@ -21,11 +21,17 @@ RUN apk add --no-cache opus opus-dev cmake; cargo chef cook --release --recipe-p
 COPY . .
 RUN cargo build --release
 
-FROM alpine:3.14
+FROM alpine:latest
 
 WORKDIR /hallabong
 
+RUN apk add --no-cache opus opus-dev cmake ffmpeg youtube-dl; \
+    addgroup -S hallabong; \
+    adduser -S -G hallabong hallabong
+
 COPY --from=builder /usr/src/project/target/release/hallabong ./hallabong
+
+USER hallabong
 
 ENV DISCORD_TOKEN YOU_MUST_SET_THIS
 CMD ["./hallabong"]
