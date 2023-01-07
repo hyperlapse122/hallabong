@@ -1,7 +1,11 @@
+#[cfg(feature = "translate")]
 use std::collections::HashMap;
+#[cfg(feature = "translate")]
 use std::sync::Arc;
 
+#[cfg(feature = "translate")]
 use google_translate3::api::Translate as TranslateApi;
+#[cfg(feature = "translate")]
 use serenity::{
     async_trait,
     client::{Context, EventHandler},
@@ -11,37 +15,52 @@ use serenity::{
     },
     model::channel::Message,
 };
+#[cfg(feature = "translate")]
 use serenity::model::channel::Reaction;
+#[cfg(feature = "translate")]
 use serenity::model::channel::ReactionType;
+#[cfg(feature = "translate")]
 use songbird::typemap::TypeMapKey;
+#[cfg(feature = "translate")]
 use tokio::sync::RwLock;
+#[cfg(feature = "translate")]
 use translate3::api::TranslateTextRequest;
 
+#[cfg(feature = "translate")]
 use crate::framework::emoji::utils::get_locale_by_flag;
 
+#[cfg(feature = "translate")]
 use super::super::error::Error;
 
+#[cfg(feature = "translate")]
 pub struct LastTranslationLanguageCache;
 
+#[cfg(feature = "translate")]
 impl TypeMapKey for LastTranslationLanguageCache {
     type Value = Arc<RwLock<HashMap<u64, String>>>;
 }
 
+#[cfg(feature = "translate")]
 pub struct GoogleTranslate;
 
+#[cfg(feature = "translate")]
 impl TypeMapKey for GoogleTranslate {
     type Value = Arc<RwLock<TranslateApi>>;
 }
 
+#[cfg(feature = "translate")]
 pub struct GoogleProjectId;
 
+#[cfg(feature = "translate")]
 impl TypeMapKey for GoogleProjectId {
     type Value = Arc<String>;
 }
 
+#[cfg(feature = "translate")]
 pub struct Handler;
 
 #[async_trait]
+#[cfg(feature = "translate")]
 impl EventHandler for Handler {
     async fn reaction_add(&self, _ctx: Context, _add_reaction: Reaction) {
         println!("new emoji event!");
@@ -61,10 +80,12 @@ impl EventHandler for Handler {
 
 #[group]
 #[commands(translate)]
+#[cfg(feature = "translate")]
 pub struct Translate;
 
 #[command]
 #[aliases("t")]
+#[cfg(feature = "translate")]
 async fn translate(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let reference_message = msg.referenced_message.clone()
         .ok_or_else(|| Error::DetailedInvalidArguments("Reference message to translate".into()))?.content.clone();

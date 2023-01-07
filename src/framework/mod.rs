@@ -24,8 +24,10 @@ impl FrameworkBuilder<'_> for ClientBuilder {
             .after(groups::hooks::after)
             .help(&help::HELP_COMMAND)
             .group(&groups::general::GENERAL_GROUP)
-            .group(&groups::translate::TRANSLATE_GROUP)
             .group(&groups::music::MUSIC_GROUP);
+
+        #[cfg(feature = "translate")]
+        let framework = framework.group(&groups::translate::TRANSLATE_GROUP);
 
         self.framework(framework)
     }
@@ -34,6 +36,8 @@ impl FrameworkBuilder<'_> for ClientBuilder {
         let mut handler = handler::EventHandler::default();
         handler.register(Box::new(groups::general::Handler));
         handler.register(Box::new(groups::music::Handler));
+
+        #[cfg(feature = "translate")]
         handler.register(Box::new(groups::translate::Handler));
 
         self.event_handler(handler)
