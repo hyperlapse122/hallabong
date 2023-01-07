@@ -18,11 +18,14 @@ tokio = { version = "1.11.0", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1"
 tracing-futures = "0.2"
 tracing-subscriber = "0.2"
-google-translate3 = "*"
+google-translate3 = { version = "*", optional = true }
 hyper = "^0.14"
 hyper-rustls = "^0.22"
 serde = "^1.0"
 serde_json = "^1.0"
-yup-oauth2 = "^5.0"
+yup-oauth2 = { version = "^5.0", optional = true }
 html-escape = "0.2.9"
 dotenv = "0.15.0"
+
+[features]
+translate = ["dep:google-translate3", "dep:yup-oauth2"]
