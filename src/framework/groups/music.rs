@@ -266,7 +266,7 @@ async fn unmute(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[only_in(guilds)]
 #[num_args(1)]
-#[aliases("q")]
+#[aliases("q", "")]
 async fn queue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = args
         .single::<String>()
